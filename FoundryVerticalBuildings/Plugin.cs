@@ -56,6 +56,17 @@ namespace SeersMod
                 }
                 log.Log($"onLoadItemTemplate - {__instance.identifier} -- {__instance.modIdentifier}");
 
+                var buildingTemplates = ItemTemplateManager.getAllBuildableObjectTemplates();
+                var templateHash = BuildableObjectTemplate.generateStringHash(__instance.buildableObjectIdentifer);
+                if (!buildingTemplates.TryGetValue(templateHash, out var template))
+                {
+                    log.LogError($"Template building {__instance.buildableObjectIdentifer} not found!");
+                    return;
+                }
+
+                var newBuilding = CreateVerticalTemplate(template);
+                AssetManager.registerAsset(newBuilding, true);
+
                 __instance.toggleableModeType = ItemTemplate.ItemTemplateToggleableModeTypes.MultipleBuildings;
                 __instance.toggleableModes = new ItemTemplate.ItemMode[]
                     {
@@ -69,8 +80,9 @@ namespace SeersMod
                         new ItemTemplate.ItemMode()
                         {
                             name = "Vertical",
-                            identifier = $"{__instance.buildableObjectIdentifer}_v",
+                            identifier = newBuilding.identifier,//$"{__instance.buildableObjectIdentifer}_v",
                             isDefault = false,
+                            //buildableObjectTemplate = CreateVerticalTemplate(template),
                             //icon = __instance.icon //Todo: Add icon
                         },
                     };
@@ -78,8 +90,8 @@ namespace SeersMod
 
 
 
-            [HarmonyPatch(typeof(BuildableObjectTemplate), nameof(BuildableObjectTemplate.onLoad))]
-            [HarmonyPrefix]
+           // [HarmonyPatch(typeof(BuildableObjectTemplate), nameof(BuildableObjectTemplate.onLoad))]
+           // [HarmonyPrefix]
             public static void onLoadBuildableObjectTemplate(BuildableObjectTemplate __instance)
             {
 
@@ -164,6 +176,74 @@ namespace SeersMod
                 instance.onLoad();
             }
 
+
+            private static BuildableObjectTemplate CreateVerticalTemplate(BuildableObjectTemplate original)
+            {
+                log.Log($"CreateVerticalTemplate - {original.identifier} -- {original.modIdentifier}");
+                BuildableObjectTemplate instance = Object.Instantiate(original);
+                instance.identifier = $"{instance.identifier}_v";
+                var prefab = instance.prefabOnDisk;
+
+                //prefab.transform.Rotate(90, 0, 0);
+
+                prefab.iterateChildren((child) =>
+                {
+                    if (verbose.Get())
+                    {
+                        log.Log($"child.name - {child.name}");
+                        log.Log($"child.transform.rotation - {child.transform.rotation}");
+                        log.Log($"child.transform.position - {child.transform.position}");
+                    }
+
+                    switch (child.name)
+                    {
+                        case "convey_01_straight (1)":
+                            child.transform.position = new Vector3(-0.5f, 0, 0);
+                            break;
+                        case "convey_01_straight (2)":
+                            child.transform.position = new Vector3(-0.5f, 1, 0);
+                            break;
+                        case "convey_01_straight (3)":
+                            child.transform.position = new Vector3(0.5f, 0, 0);
+                            break;
+                        case "convey_01_straight (4)":
+                            child.transform.position = new Vector3(0.5f, 1, 0);
+                            break;
+                        case "TerrainTileCollider":
+                            child.transform.rotation = Quaternion.Euler(child.transform.rotation.x - 90, child.transform.rotation.y, child.transform.rotation.z);
+                            child.transform.position = new Vector3(0, 0, 0);
+                            break;
+                        case "Conveyor_balancer":
+                            child.transform.position = new Vector3(0, 1, 0.5f);
+                            child.transform.rotation = Quaternion.Euler(child.transform.rotation.x - 90, child.transform.rotation.y, child.transform.rotation.z);
+                            break;
+                        case "BalancerControlPanel_IN":
+                            child.transform.position = new Vector3(-0.359f, 1.5f, -0.359f);
+                            child.transform.rotation = Quaternion.Euler(child.transform.rotation.x - 90, child.transform.rotation.y, child.transform.rotation.z);
+                            break;
+                        case "BalancerControlPanel_OUT":
+                            child.transform.position = new Vector3(0.359f, 1.5f, -0.359f);
+                            child.transform.rotation = Quaternion.Euler(child.transform.rotation.x - 90, child.transform.rotation.y, child.transform.rotation.z);
+                            break;
+
+                        default:
+                            log.Log($"Unexpected child!!!!! - {child.name}");
+                            break;
+                    }
+                    if (verbose.Get())
+                    {
+                        log.Log($"Final: child.transform.rotation - {child.transform.rotation}");
+                        log.Log($"Final: child.transform.position - {child.transform.position}");
+                    }
+
+
+                }, false);
+
+                //If the building’s original size is (2, 1, 2) and you want to rotate it vertically from the ground up, the new size would be (2, 2, 1).
+                //This is because you’re essentially swapping the Y (height) and Z (depth) dimensions.
+                instance.size = new Vector3Int(instance.size.x, instance.size.z, instance.size.y);
+                return instance;
+            }
 
 
             public static void onLoadBuildableObjectTemplate_old(BuildableObjectTemplate __instance)
