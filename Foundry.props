@@ -8,7 +8,7 @@
     <!-- Path to Foundry assemblies folder -->
     <FoundryAssembliesPath>$(FoundryInstallPath)Foundry_Data\Managed\</FoundryAssembliesPath>
     <!-- Target mod folder name -->
-    <ModFolderName>SeersMod</ModFolderName>
+    <ModFolderName>FoundryVerticalBuildings</ModFolderName>
     <!-- Target mod directory -->
     <TargetModDir>$(FoundryModsPath)$(ModFolderName)</TargetModDir>
     <!-- Target mod path -->
