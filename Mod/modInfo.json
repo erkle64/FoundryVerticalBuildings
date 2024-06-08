@@ -1,0 +1,9 @@
+{
+  "identifier": "Seer.FoundryVerticalBuildings",
+  "displayName": "FoundryVerticalBuildings",
+  "assetBundles": [ ],
+  "assemblies": [
+    "FoundryVerticalBuildings.dll"
+  ]
+}
+
