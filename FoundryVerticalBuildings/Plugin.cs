@@ -1,14 +1,12 @@
 using C3;
 using C3.ModKit;
 using HarmonyLib;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Unfoundry;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace SeersMod
 {
@@ -59,9 +57,8 @@ namespace SeersMod
                 }
                 log.Log($"onLoadItemTemplate - {__instance.identifier} -- {__instance.modIdentifier}");
 
-                var buildingTemplates = ItemTemplateManager.getAllBuildableObjectTemplates();
-                var templateHash = BuildableObjectTemplate.generateStringHash(__instance.buildableObjectIdentifer);
-                if (!buildingTemplates.TryGetValue(templateHash, out var template))
+                var template = ItemTemplateManager.getBuildableObjectTemplate(__instance.buildableObjectIdentifer);
+                if (template == null)
                 {
                     log.LogError($"Template building {__instance.buildableObjectIdentifer} not found!");
                     return;
@@ -120,7 +117,11 @@ namespace SeersMod
                 instance.identifier = $"{instance.identifier}_v";
             
                 var prefab = instance.prefabOnDisk;
-                prefab = Object.Instantiate(original.prefabOnDisk);
+                prefab = Object.Instantiate(instance.prefabOnDisk);
+                prefab.SetActive(false);
+                prefab.name = $"{instance.prefabOnDisk.name}_v";
+                Object.DontDestroyOnLoad(prefab);
+                instance.prefabOnDisk = prefab;
 
                 //prefab.transform.Rotate(90, 0, 0);
 
@@ -140,16 +141,31 @@ namespace SeersMod
                             break;
                         case "convey_01_straight (2)":
                             child.transform.position = new Vector3(-0.5f, 1, 0);
+                            {
+                                var boxCollider = child.AddComponent<BoxCollider>();
+                                boxCollider.center = new Vector3(0, 0.1433795f, 0);
+                                boxCollider.size = new Vector3(1, 0.2867591f, 1);
+                            }
                             break;
                         case "convey_01_straight (3)":
                             child.transform.position = new Vector3(0.5f, 0, 0);
                             break;
                         case "convey_01_straight (4)":
                             child.transform.position = new Vector3(0.5f, 1, 0);
+                            {
+                                var boxCollider = child.AddComponent<BoxCollider>();
+                                boxCollider.center = new Vector3(0, 0.1433795f, 0);
+                                boxCollider.size = new Vector3(1, 0.2867591f, 1);
+                            }
                             break;
                         case "TerrainTileCollider":
                             child.transform.rotation = Quaternion.Euler(child.transform.rotation.x - 90, child.transform.rotation.y, child.transform.rotation.z);
                             child.transform.position = new Vector3(0, 0, 0);
+                            {
+                                var boxCollider = child.GetComponent<BoxCollider>();
+                                boxCollider.center = new Vector3(0, 1.0f, 0);
+                                boxCollider.size = new Vector3(1, 2.0f, 1);
+                            }
                             break;
                         case "Conveyor_balancer":
                             child.transform.position = new Vector3(0, 1, 0.5f);
@@ -180,6 +196,7 @@ namespace SeersMod
                 //If the building�s original size is (2, 1, 2) and you want to rotate it vertically from the ground up, the new size would be (2, 2, 1).
                 //This is because you�re essentially swapping the Y (height) and Z (depth) dimensions.
                 instance.size = new Vector3Int(instance.size.x, instance.size.z, instance.size.y);
+                instance.initId();
                 instance.onLoad();
                 botIdToTextureArray[instance.id] = new Texture2D[] {
                     instance.buildingPart_texture_albedo,

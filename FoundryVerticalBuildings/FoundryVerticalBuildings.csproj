@@ -33,6 +33,9 @@
     <Reference Include="UnityEngine.InputModule">
       <HintPath>$(FoundryAssembliesPath)UnityEngine.InputModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(FoundryAssembliesPath)UnityEngine.PhysicsModule.dll</HintPath>
+    </Reference>
     <Reference Include="mscorlib">
       <HintPath>$(FoundryAssembliesPath)mscorlib.dll</HintPath>
     </Reference>
