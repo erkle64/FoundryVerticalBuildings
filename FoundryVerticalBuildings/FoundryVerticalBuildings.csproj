@@ -10,6 +10,10 @@
   <PropertyGroup>
     <TargetFrameworkMonikerAssemblyAttributesPath>$(SolutionDir)Attributes\AssemblyAttributes.cs</TargetFrameworkMonikerAssemblyAttributesPath>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <None Remove="vertical.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="0Harmony">

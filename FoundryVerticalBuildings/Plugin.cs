@@ -60,26 +60,9 @@ namespace SeersMod
                 }
                 log.Log($"onLoadItemTemplate - {__instance.identifier} -- {__instance.modIdentifier}");
 
-                // Create a new 2D sprite texture for horizontal icon
-                Texture2D horizontalSpriteTexture = new Texture2D(128, 128);
-
-                // Fill the texture with color
-                Color fillColor = Color.yellow;
-                Color[] fillPixels = new Color[horizontalSpriteTexture.width * horizontalSpriteTexture.height];
-                for (int i = 0; i < fillPixels.Length; i++)
-                {
-                    fillPixels[i] = fillColor;
-                }
-                horizontalSpriteTexture.SetPixels(fillPixels);
-                horizontalSpriteTexture.Apply();
-
-                // Create a new Sprite for horizontal icon
-                Sprite horizontalSprite = Sprite.Create(horizontalSpriteTexture, new Rect(0, 0, 128, 128), new Vector2(0.5f, 0.5f), 100.0f);
-
-                Texture2D verticalSpriteTexture = new Texture2D(128, 128);
-                verticalSpriteTexture.SetPixels(fillPixels);
-                verticalSpriteTexture.Apply();
-                Sprite verticalSprite = Sprite.Create(verticalSpriteTexture, new Rect(0, 0, 128, 128), new Vector2(0.5f, 0.5f), 100.0f);
+                // load sprites
+                Sprite horizontalSprite = Sprite.Create(GetHorizontalItemIcon(), new Rect(0, 0, 128, 128), new Vector2(0.5f, 0.5f), 100.0f);
+                Sprite verticalSprite = Sprite.Create(GetVerticalItemIcon(), new Rect(0, 0, 128, 128), new Vector2(0.5f, 0.5f), 100.0f);
 
 
                 __instance.toggleableModeType = ItemTemplate.ItemTemplateToggleableModeTypes.MultipleBuildings;
@@ -101,6 +84,40 @@ namespace SeersMod
                         },
                     };
             }
+
+            private static Texture2D horizontalTexture = null;
+            private static Texture2D verticalTexture = null;
+            private static Texture2D GetVerticalItemIcon()
+            {
+                if(verticalTexture != null)
+                {
+                    return verticalTexture;
+                }
+                var filePath = Path.Combine(Path.GetFullPath("."), "Mods", MODNAME, "vertical.png");
+                var iconName = Path.GetFileNameWithoutExtension(filePath);
+                if (verbose.Get()) log.Log($"Loading icon {iconName} from '{filePath}'");
+
+                var iconTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
+                iconTexture.LoadImage(File.ReadAllBytes(filePath), false);
+                verticalTexture = iconTexture;
+                return verticalTexture;
+            }
+            private static Texture2D GetHorizontalItemIcon()
+            {
+                if (horizontalTexture != null)
+                {
+                    return horizontalTexture;
+                }
+                var filePath = Path.Combine(Path.GetFullPath("."), "Mods", MODNAME, "horizontal.png");
+                var iconName = Path.GetFileNameWithoutExtension(filePath);
+                if (verbose.Get()) log.Log($"Loading icon {iconName} from '{filePath}'");
+
+                var iconTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
+                iconTexture.LoadImage(File.ReadAllBytes(filePath), false);
+                horizontalTexture = iconTexture;
+                return horizontalTexture;
+            }
+
 
             [HarmonyPatch(typeof(BuildableObjectTemplate), nameof(BuildableObjectTemplate.onLoad))]
             [HarmonyPriority(1)]
