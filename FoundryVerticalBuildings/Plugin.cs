@@ -16,7 +16,7 @@ namespace SeersMod
     public class Plugin : UnfoundryPlugin
     {
         public const string
-            MODNAME = "SeersMod",
+            MODNAME = "FoundryVerticalBuildings",
             AUTHOR = "seer",
             GUID = AUTHOR + "." + MODNAME,
             VERSION = "0.1.0";
@@ -177,8 +177,8 @@ namespace SeersMod
 
                 }, false);
 
-                //If the building’s original size is (2, 1, 2) and you want to rotate it vertically from the ground up, the new size would be (2, 2, 1).
-                //This is because you’re essentially swapping the Y (height) and Z (depth) dimensions.
+                //If the buildingï¿½s original size is (2, 1, 2) and you want to rotate it vertically from the ground up, the new size would be (2, 2, 1).
+                //This is because youï¿½re essentially swapping the Y (height) and Z (depth) dimensions.
                 instance.size = new Vector3Int(instance.size.x, instance.size.z, instance.size.y);
                 instance.onLoad();
                 botIdToTextureArray[instance.id] = new Texture2D[] {
