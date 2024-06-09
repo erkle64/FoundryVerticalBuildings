@@ -51,7 +51,7 @@ namespace SeersMod
             public static void onLoadItemTemplate(ItemTemplate __instance)
             {
                 //only patch the base conveyor balancer
-                if (__instance.identifier != "_base_conveyor_balancer_i")
+                if (!__instance.identifier.Contains("conveyor_balancer"))
                 {
                     return;
                 }
