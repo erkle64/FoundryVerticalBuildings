@@ -1,6 +1,7 @@
 using C3;
 using C3.ModKit;
 using HarmonyLib;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -42,32 +43,22 @@ namespace SeersMod
         }
 
         [HarmonyPatch]
+        [HarmonyPriority(1)]
         public static class Patch
         {
 
 
             [HarmonyPatch(typeof(ItemTemplate), nameof(ItemTemplate.onLoad))]
+            [HarmonyPriority(1)]
             [HarmonyPrefix]
             public static void onLoadItemTemplate(ItemTemplate __instance)
             {
-                //only patch the base conveyor balancer
+                //only patch the conveyor balancer
                 if (!__instance.identifier.Contains("conveyor_balancer"))
                 {
                     return;
                 }
                 log.Log($"onLoadItemTemplate - {__instance.identifier} -- {__instance.modIdentifier}");
-
-                var template = ItemTemplateManager.getBuildableObjectTemplate(__instance.buildableObjectIdentifer);
-                if (template == null)
-                {
-                    log.LogError($"Template building {__instance.buildableObjectIdentifer} not found!");
-                    return;
-                }
-
-                var newBuilding = CreateVerticalTemplate(template);
-                AssetManager.registerAsset(newBuilding, true);
-
-
 
                 // Create a new 2D sprite texture for horizontal icon
                 Texture2D horizontalSpriteTexture = new Texture2D(128, 128);
@@ -104,22 +95,35 @@ namespace SeersMod
                         new ItemTemplate.ItemMode()
                         {
                             name = "Vertical",
-                            identifier = newBuilding.identifier,
+                            identifier = $"{__instance.buildableObjectIdentifer}{NewBuildingSuffix}",
                             isDefault = false,
                             icon = verticalSprite //Todo: Add icon
                         },
                     };
             }
+
+            [HarmonyPatch(typeof(BuildableObjectTemplate), nameof(BuildableObjectTemplate.onLoad))]
+            [HarmonyPriority(1)]
+            [HarmonyPrefix]
+            public static void onLoadBuildableObjectTemplate(BuildableObjectTemplate __instance)
+            {
+                //needed to gett the loading time right with TweaksLoader
+                if (hasRun_buildings) return;
+                hasLoaded_buildings = true;
+
+            }
+
+
             private static BuildableObjectTemplate CreateVerticalTemplate(BuildableObjectTemplate original)
             {
                 log.Log($"CreateVerticalTemplate - {original.identifier} -- {original.modIdentifier}");
                 BuildableObjectTemplate instance = Object.Instantiate(original);
-                instance.identifier = $"{instance.identifier}_v";
+                instance.identifier = $"{instance.identifier}{NewBuildingSuffix}";
             
                 var prefab = instance.prefabOnDisk;
                 prefab = Object.Instantiate(instance.prefabOnDisk);
                 prefab.SetActive(false);
-                prefab.name = $"{instance.prefabOnDisk.name}_v";
+                prefab.name = $"{instance.prefabOnDisk.name}{NewBuildingSuffix}";
                 Object.DontDestroyOnLoad(prefab);
                 instance.prefabOnDisk = prefab;
 
@@ -134,7 +138,7 @@ namespace SeersMod
                         log.Log($"child.transform.position - {child.transform.position}");
                     }
 
-                    switch (child.name)
+                    switch (child.name.ToLower())
                     {
                         case "convey_01_straight (1)":
                             child.transform.position = new Vector3(-0.5f, 0, 0);
@@ -158,7 +162,7 @@ namespace SeersMod
                                 boxCollider.size = new Vector3(1, 0.2867591f, 1);
                             }
                             break;
-                        case "TerrainTileCollider":
+                        case "terraintilecollider":
                             child.transform.rotation = Quaternion.Euler(child.transform.rotation.x - 90, child.transform.rotation.y, child.transform.rotation.z);
                             child.transform.position = new Vector3(0, 0, 0);
                             {
@@ -167,15 +171,15 @@ namespace SeersMod
                                 boxCollider.size = new Vector3(1, 2.0f, 1);
                             }
                             break;
-                        case "Conveyor_balancer":
+                        case "conveyor_balancer":
                             child.transform.position = new Vector3(0, 1, 0.5f);
                             child.transform.rotation = Quaternion.Euler(child.transform.rotation.x - 90, child.transform.rotation.y, child.transform.rotation.z);
                             break;
-                        case "BalancerControlPanel_IN":
+                        case "balancercontrolpanel_in":
                             child.transform.position = new Vector3(-0.359f, 1.5f, -0.359f);
                             child.transform.rotation = Quaternion.Euler(child.transform.rotation.x - 90, child.transform.rotation.y, child.transform.rotation.z);
                             break;
-                        case "BalancerControlPanel_OUT":
+                        case "balancercontrolpanel_out":
                             child.transform.position = new Vector3(0.359f, 1.5f, -0.359f);
                             child.transform.rotation = Quaternion.Euler(child.transform.rotation.x - 90, child.transform.rotation.y, child.transform.rotation.z);
                             break;
@@ -208,6 +212,64 @@ namespace SeersMod
                 return instance;
             }
 
+            class InitOnApplicationStartEnumerator : IEnumerable
+            {
+                private IEnumerator _enumerator;
+
+                public InitOnApplicationStartEnumerator(IEnumerator enumerator)
+                {
+                    _enumerator = enumerator;
+                }
+
+                IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
+
+                public IEnumerator GetEnumerator()
+                {
+                    while (_enumerator.MoveNext())
+                    {
+                        var enumerated = _enumerator.Current;
+
+                        if (!hasRun_buildings && hasLoaded_buildings)
+                        {
+                            hasRun_buildings = true;
+
+                            //ProcessBuildingAdditions
+
+                            var buildingTemplates = ItemTemplateManager.getAllBuildableObjectTemplates();
+                            foreach (var template in buildingTemplates.Values.ToArray())
+                            {
+                                //only patch the conveyor balancer
+                                if (!template.identifier.Contains("conveyor_balancer") || template.identifier.EndsWith(NewBuildingSuffix))
+                                {
+                                    continue;
+                                }
+                                log.Log($"BuildingAdditions - {template.identifier} -- {template.modIdentifier}");
+
+                                var newBuilding = CreateVerticalTemplate(template);
+                                AssetManager.registerAsset(newBuilding, true);
+                            }
+
+
+
+                        }
+
+
+                        yield return enumerated;
+                    }
+                }
+            }
+
+            [HarmonyPatch(typeof(ItemTemplateManager), nameof(ItemTemplateManager.InitOnApplicationStart))]
+            [HarmonyPriority(1)]
+            [HarmonyPostfix]
+            static void onItemTemplateManagerInitOnApplicationStart(ref IEnumerator __result)
+            {
+                log.LogFormat("onItemTemplateManagerInitOnApplicationStart");
+                var myEnumerator = new InitOnApplicationStartEnumerator(__result);
+                __result = myEnumerator.GetEnumerator();
+            }
+
+
             [HarmonyPatch(typeof(TextureStreamingProcessor), nameof(TextureStreamingProcessor.OnAddedToManager))]
             [HarmonyPostfix]
             public static void TextureStreamingProcessorOnAddedToManager(TextureStreamingProcessor __instance)
@@ -217,6 +279,9 @@ namespace SeersMod
 
 
             public static Dictionary<ulong, Texture2D[]> botIdToTextureArray = null;
+            private const string NewBuildingSuffix = "_seer_v";
+            private static bool hasRun_buildings = false;
+            private static bool hasLoaded_buildings = false;
         }
     }
 }
